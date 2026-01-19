@@ -9,8 +9,8 @@ wheels/
 # Virtual environments
 .venv
 
-vendor
-weights
+vendor/
+/weights/
 
 .DS_Store
 .claude

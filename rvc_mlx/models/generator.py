@@ -57,6 +57,17 @@ class GeneratorNSF(nn.Module):
         # Total upsampling factor
         self.upp = math.prod(upsample_rates)
 
+        # Validate sample rate and upsample factor consistency
+        # ContentVec outputs at ~50fps (320 samples @ 16kHz per frame)
+        # The upsampling factor should match: sr / 100 (since 16kHz / 160 hop = 100fps)
+        expected_upp = sr // 100
+        if self.upp != expected_upp:
+            raise ValueError(
+                f"Upsample factor {self.upp} (from {upsample_rates}) "
+                f"doesn't match expected {expected_upp} for {sr}Hz sample rate. "
+                f"Check model configuration."
+            )
+
         # Source module for harmonic generation
         self.m_source = SourceModuleHnNSF(sample_rate=sr, harmonic_num=0)
 

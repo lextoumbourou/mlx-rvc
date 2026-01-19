@@ -276,7 +276,7 @@ class SynthesizerTrnMs768NSFsid_nono(nn.Module):
             upsample_initial_channel,
             upsample_kernel_sizes,
             gin_channels=gin_channels,
-            sr=sr or 48000,
+            sr=sr or 40000,
         )
 
         # Speaker embedding
