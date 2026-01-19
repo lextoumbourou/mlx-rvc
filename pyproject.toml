@@ -1,10 +1,36 @@
 [project]
 name = "rvc-mlx"
 version = "0.1.0"
-description = "Add your description here"
+description = "Retrieval-based Voice Conversion for Apple Silicon using MLX"
 readme = "README.md"
 requires-python = ">=3.11"
-dependencies = []
+dependencies = [
+    "mlx>=0.20.0",
+    "mlx-contentvec>=0.1.0",
+    "numpy>=1.24.0",
+    "pyworld>=0.3.4",
+    "scipy>=1.11.0",
+    "safetensors>=0.4.0",
+    "setuptools>=80.9.0",
+]
 
-[tool.uv.workspace]
-members = ["contentvec-mlx"]
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+]
+
+[project.scripts]
+rvc-mlx = "rvc_mlx.cli:main"
+
+[tool.uv]
+package = true
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.4.2",
+]
