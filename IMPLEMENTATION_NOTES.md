@@ -4,6 +4,45 @@
 
 This document outlines the plan for building an MLX-native implementation of RVC (Retrieval-based Voice Conversion) for Apple Silicon. The initial focus is on **inference-only** functionality via a command-line interface, with training and GUI to follow.
 
+## Current Status
+
+### Completed ✅
+
+| Component | Location | Tests | Notes |
+|-----------|----------|-------|-------|
+| Audio I/O | `rvc_mlx/audio/io.py` | 12 tests | FFmpeg-based load/save |
+| Audio Processing | `rvc_mlx/audio/processing.py` | ✅ | Normalize, RMS, padding |
+| F0 Extraction (Harvest) | `rvc_mlx/f0/harvest.py` | 8 tests | pyworld wrapper |
+| F0 Processing | `rvc_mlx/f0/processing.py` | ✅ | Pitch shift, quantization |
+| Weight Norm Conv1d | `rvc_mlx/models/commons.py` | 6 tests | Validated vs PyTorch |
+| SineGen | `rvc_mlx/models/nsf.py` | 5 tests | Harmonic source generation |
+| SourceModuleHnNSF | `rvc_mlx/models/nsf.py` | 4 tests | NSF source module |
+| ResBlock1/2 | `rvc_mlx/models/resblock.py` | 4 tests | HiFi-GAN residual blocks |
+| GeneratorNSF | `rvc_mlx/models/generator.py` | 5 tests | Full decoder/vocoder |
+| MultiHeadAttention | `rvc_mlx/models/attentions.py` | ✅ | With relative position encoding |
+| Encoder (Transformer) | `rvc_mlx/models/attentions.py` | ✅ | 6-layer transformer |
+| TextEncoder | `rvc_mlx/models/encoder.py` | 1 test | Phone + pitch encoding |
+| WN (WaveNet) | `rvc_mlx/models/flow.py` | ✅ | Dilated convolutions |
+| ResidualCouplingBlock | `rvc_mlx/models/flow.py` | 1 test | Normalizing flow |
+| SynthesizerTrnMs768NSFsid | `rvc_mlx/models/synthesizer.py` | 5 tests | Full synthesizer model |
+
+**Total: 59 tests passing**
+
+### In Progress 🔄
+
+| Component | Status | Notes |
+|-----------|--------|-------|
+| Weight Conversion | Not started | PyTorch → SafeTensors |
+| Pipeline Integration | Not started | ContentVec → Synthesizer → Audio |
+| CLI Interface | Not started | Command-line tool |
+
+### Not Started 📋
+
+- FAISS Index Blending
+- RMVPE F0 Extraction
+- Multiple Sample Rate Support (32k/40k - 48k done)
+- V1 Model Support
+
 ## What We Already Have
 
 ### mlx-contentvec (Complete)
@@ -232,54 +271,65 @@ RVC checkpoints are PyTorch `.pth` files with structure:
 
 Need conversion script: PyTorch → SafeTensors for MLX.
 
-## Proposed Project Structure
+## Project Structure (Current)
 
 ```
 rvc_mlx/
 ├── __init__.py
-├── cli.py                    # Command-line interface
-├── config.py                 # Configuration management
 ├── audio/
 │   ├── __init__.py
-│   ├── io.py                 # Load/save audio files
-│   └── processing.py         # Resample, normalize, RMS
+│   ├── io.py                 # ✅ FFmpeg-based load/save
+│   └── processing.py         # ✅ Normalize, RMS, padding
 ├── f0/
 │   ├── __init__.py
-│   ├── harvest.py           # pyworld wrapper
-│   ├── rmvpe.py             # RMVPE model (future)
-│   └── processing.py        # Pitch shift, mel conversion
+│   ├── harvest.py           # ✅ pyworld wrapper
+│   ├── rmvpe.py             # 📋 TODO: RMVPE model
+│   └── processing.py        # ✅ Pitch shift, mel conversion
 ├── index/
 │   ├── __init__.py
-│   └── faiss_blend.py       # FAISS index loading and blending
+│   └── faiss_blend.py       # 📋 TODO: FAISS index blending
 ├── models/
-│   ├── __init__.py
-│   ├── synthesizer.py       # SynthesizerTrnMs768NSFsid
-│   ├── encoder.py           # TextEncoder
-│   ├── flow.py              # ResidualCouplingBlock
-│   ├── generator.py         # GeneratorNSF
-│   ├── nsf.py               # Neural source filter components
-│   └── commons.py           # Shared utilities
-├── pipeline.py              # Main inference pipeline
+│   ├── __init__.py          # ✅ Exports all models
+│   ├── synthesizer.py       # ✅ SynthesizerTrnMs768NSFsid
+│   ├── encoder.py           # ✅ TextEncoder
+│   ├── flow.py              # ✅ ResidualCouplingBlock, WN, Flip
+│   ├── generator.py         # ✅ GeneratorNSF
+│   ├── resblock.py          # ✅ ResBlock1, ResBlock2
+│   ├── nsf.py               # ✅ SineGen, SourceModuleHnNSF
+│   ├── attentions.py        # ✅ MultiHeadAttention, Encoder, FFN
+│   └── commons.py           # ✅ WeightNormConv1d, utilities
+├── pipeline.py              # 📋 TODO: Main inference pipeline
+├── cli.py                   # 📋 TODO: Command-line interface
 └── weights/
-    └── convert.py           # PyTorch → SafeTensors conversion
+    └── convert.py           # 📋 TODO: PyTorch → SafeTensors
 
-scripts/
-├── convert_weights.py       # CLI for weight conversion
-└── download_models.py       # Download pre-trained models
+tests/
+├── test_audio.py            # ✅ 12 tests
+├── test_f0.py               # ✅ 8 tests
+├── test_weight_norm.py      # ✅ 6 tests
+├── test_nsf.py              # ✅ 9 tests
+├── test_resblock.py         # ✅ 4 tests
+├── test_generator.py        # ✅ 5 tests
+└── test_synthesizer.py      # ✅ 5 tests
+
+vendor/
+├── weights/
+│   └── f0G48k.pth           # ✅ Reference PyTorch weights (72MB)
+└── Retrieval-based-Voice-Conversion-WebUI/  # Reference implementation
 ```
 
 ## Implementation Order
 
 ### Phase 1: Minimal Working Pipeline
-1. **Audio I/O** - Load/save with FFmpeg, basic processing
-2. **F0 Extraction** - Integrate pyworld (Harvest method)
-3. **GeneratorNSF** - Core decoder (most complex, start early)
-4. **TextEncoder** - Relatively simple transformer
-5. **ResidualCouplingBlock** - Flow layers
-6. **SynthesizerTrnMs768NSFsid** - Combine all components
-7. **Weight Conversion** - PyTorch → SafeTensors
-8. **Pipeline Integration** - Wire everything together
-9. **CLI** - Basic command-line interface
+1. ✅ **Audio I/O** - Load/save with FFmpeg, basic processing
+2. ✅ **F0 Extraction** - Integrate pyworld (Harvest method)
+3. ✅ **GeneratorNSF** - Core decoder (most complex, start early)
+4. ✅ **TextEncoder** - Relatively simple transformer
+5. ✅ **ResidualCouplingBlock** - Flow layers
+6. ✅ **SynthesizerTrnMs768NSFsid** - Combine all components
+7. 🔄 **Weight Conversion** - PyTorch → SafeTensors
+8. 🔄 **Pipeline Integration** - Wire everything together
+9. 🔄 **CLI** - Basic command-line interface
 
 ### Phase 2: Quality & Features
 10. **FAISS Index Blending** - Improve conversion quality
@@ -294,7 +344,7 @@ scripts/
 
 ## Key Technical Challenges
 
-### 1. NSF Source Generation
+### 1. NSF Source Generation ✅ SOLVED
 The sine wave generation with harmonics is mathematically sensitive:
 ```python
 # Generate fundamental + harmonics
@@ -302,15 +352,17 @@ for i in range(num_harmonics):
     phase = cumsum(2 * pi * f0 * (i+1) / sr)
     harmonic = sin(phase)
 ```
-Need careful handling of phase continuity and voiced/unvoiced transitions.
+**Solution**: Implemented in `rvc_mlx/models/nsf.py` with careful phase continuity handling using `mx.remainder` for modulo operations and masking for voiced/unvoiced transitions.
 
-### 2. Transposed Convolutions
+### 2. Transposed Convolutions ✅ SOLVED
 MLX has `conv_transpose1d` but need to verify behavior matches PyTorch exactly, especially with:
 - Non-unit stride
 - Output padding
 - Weight normalization
 
-### 3. Weight Normalization
+**Solution**: `WeightNormConvTranspose1d` in `rvc_mlx/models/commons.py` validates against PyTorch reference with 6 passing tests.
+
+### 3. Weight Normalization ✅ SOLVED
 Used extensively in generator. Need to implement:
 ```python
 # w = g * (v / ||v||)
@@ -318,9 +370,19 @@ def weight_norm_forward(v, g):
     norm = sqrt(sum(v ** 2, axis=...))
     return g * v / norm
 ```
+**Solution**: `WeightNormConv1d` and `WeightNormConvTranspose1d` classes in `rvc_mlx/models/commons.py`.
 
-### 4. Flow Reversibility
+### 4. Flow Reversibility ✅ SOLVED
 The coupling layers must work correctly in reverse mode for inference.
+
+**Solution**: `ResidualCouplingBlock` in `rvc_mlx/models/flow.py` with proper forward/reverse modes. Uses `Flip` operation with channel reversal via `x[:, ::-1, :]`.
+
+### 5. MLX API Differences (Discovered During Implementation)
+Several MLX API differences from PyTorch required workarounds:
+- **No `mx.flip`**: Used slice notation `x[:, ::-1, :]` instead
+- **No `mx.mod`**: Use `mx.remainder` for modulo operations
+- **No `.at[]` indexing**: Use masking for conditional updates
+- **Conv1d expects channels-last**: Added transpose wrappers for channels-first compatibility
 
 ## Dependencies
 
@@ -439,6 +501,69 @@ Weight normalization uses `weight_g` and `weight_v` decomposition:
 # Effective weight: w = g * (v / ||v||)
 weight_g: torch.Size([out_ch, 1, 1])  # magnitude
 weight_v: torch.Size([out_ch, in_ch, kernel])  # direction
+```
+
+## Next Steps
+
+### Immediate (Phase 1 Completion)
+
+1. **Weight Conversion Script** (`rvc_mlx/weights/convert.py`)
+   - Load PyTorch `.pth` checkpoint
+   - Convert weight shapes (PyTorch → MLX conventions)
+   - Save as SafeTensors for fast loading
+   - Handle weight normalization decomposition (weight_v, weight_g)
+
+2. **Pipeline Integration** (`rvc_mlx/pipeline.py`)
+   - Wire ContentVec → Synthesizer → Audio output
+   - Handle sample rate conversions
+   - Add RMS volume matching
+   - Support streaming for long audio
+
+3. **CLI Interface** (`rvc_mlx/cli.py`)
+   ```bash
+   rvc-mlx convert input.wav output.wav --model voice.safetensors
+   ```
+
+### Weight Loading Strategy
+
+The synthesizer has these weight groups to load:
+```python
+# TextEncoder (enc_p)
+enc_p.emb_phone.weight       # Linear(768, 192)
+enc_p.emb_pitch.weight       # Embedding(256, 192)
+enc_p.encoder.*              # 6 transformer layers
+enc_p.proj.*                 # Conv1d(192, 384)
+
+# Flow (flow)
+flow.flows.{0,2,4,6}.*       # 4 ResidualCouplingLayers
+flow.flows.{1,3,5,7}         # 4 Flip (no weights)
+
+# Generator (dec)
+dec.m_source.*               # SourceModuleHnNSF
+dec.conv_pre.*               # Conv1d(192, 512)
+dec.ups.{0-3}.*              # 4 ConvTranspose1d (weight norm)
+dec.noise_convs.{0-3}.*      # 4 Conv1d
+dec.resblocks.{0-11}.*       # 12 ResBlock1
+dec.conv_post.*              # Conv1d(32, 1)
+dec.cond.*                   # Conv1d(256, 512)
+
+# Speaker Embedding
+emb_g.weight                 # Embedding(109, 256)
+```
+
+### Testing with Real Weights
+
+After weight conversion:
+```python
+from rvc_mlx.models import SynthesizerTrnMs768NSFsid
+from safetensors import safe_open
+
+model = SynthesizerTrnMs768NSFsid(**config)
+with safe_open("model.safetensors", framework="mlx") as f:
+    model.load_weights(f)
+
+# Run inference
+audio, mask, _ = model.infer(phone, phone_lengths, pitch, f0, sid)
 ```
 
 ## References
