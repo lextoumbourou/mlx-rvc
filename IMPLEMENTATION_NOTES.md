@@ -1,4 +1,4 @@
-# RVC-MLX Implementation Notes
+# MLX-RVC Implementation Notes
 
 ## Overview
 
@@ -10,27 +10,27 @@ This document outlines the plan for building an MLX-native implementation of RVC
 
 | Component | Location | Tests | Notes |
 |-----------|----------|-------|-------|
-| Audio I/O | `rvc_mlx/audio/io.py` | 12 tests | FFmpeg-based load/save |
-| Audio Processing | `rvc_mlx/audio/processing.py` | ✅ | Normalize, RMS, padding |
-| F0 Extraction (Harvest) | `rvc_mlx/f0/harvest.py` | 8 tests | pyworld wrapper |
-| F0 Processing | `rvc_mlx/f0/processing.py` | ✅ | Pitch shift, quantization |
-| Weight Norm Conv1d | `rvc_mlx/models/commons.py` | 6 tests | Validated vs PyTorch |
-| SineGen | `rvc_mlx/models/nsf.py` | 5 tests | Harmonic source generation |
-| SourceModuleHnNSF | `rvc_mlx/models/nsf.py` | 4 tests | NSF source module |
-| ResBlock1/2 | `rvc_mlx/models/resblock.py` | 4 tests | HiFi-GAN residual blocks |
-| GeneratorNSF | `rvc_mlx/models/generator.py` | 5 tests | Full decoder/vocoder |
-| MultiHeadAttention | `rvc_mlx/models/attentions.py` | ✅ | With relative position encoding |
-| Encoder (Transformer) | `rvc_mlx/models/attentions.py` | ✅ | 6-layer transformer |
-| TextEncoder | `rvc_mlx/models/encoder.py` | 1 test | Phone + pitch encoding |
-| WN (WaveNet) | `rvc_mlx/models/flow.py` | ✅ | Dilated convolutions |
-| ResidualCouplingBlock | `rvc_mlx/models/flow.py` | 1 test | Normalizing flow |
-| SynthesizerTrnMs768NSFsid | `rvc_mlx/models/synthesizer.py` | 5 tests | Full synthesizer model |
-| Weight Conversion | `rvc_mlx/weights/convert.py` | ✅ | PyTorch → SafeTensors |
-| Weight Loading | `rvc_mlx/weights/loader.py` | ✅ | Load weights into MLX models |
-| Inference Pipeline | `rvc_mlx/pipeline.py` | ✅ | End-to-end voice conversion |
-| CLI Interface | `rvc_mlx/cli.py` | ✅ | `rvc-mlx convert` and `rvc-mlx info` commands |
+| Audio I/O | `mlx_rvc/audio/io.py` | 12 tests | FFmpeg-based load/save |
+| Audio Processing | `mlx_rvc/audio/processing.py` | ✅ | Normalize, RMS, padding |
+| F0 Extraction (Harvest) | `mlx_rvc/f0/harvest.py` | 8 tests | pyworld wrapper |
+| F0 Processing | `mlx_rvc/f0/processing.py` | ✅ | Pitch shift, quantization |
+| Weight Norm Conv1d | `mlx_rvc/models/commons.py` | 6 tests | Validated vs PyTorch |
+| SineGen | `mlx_rvc/models/nsf.py` | 5 tests | Harmonic source generation |
+| SourceModuleHnNSF | `mlx_rvc/models/nsf.py` | 4 tests | NSF source module |
+| ResBlock1/2 | `mlx_rvc/models/resblock.py` | 4 tests | HiFi-GAN residual blocks |
+| GeneratorNSF | `mlx_rvc/models/generator.py` | 5 tests | Full decoder/vocoder |
+| MultiHeadAttention | `mlx_rvc/models/attentions.py` | ✅ | With relative position encoding |
+| Encoder (Transformer) | `mlx_rvc/models/attentions.py` | ✅ | 6-layer transformer |
+| TextEncoder | `mlx_rvc/models/encoder.py` | 1 test | Phone + pitch encoding |
+| WN (WaveNet) | `mlx_rvc/models/flow.py` | ✅ | Dilated convolutions |
+| ResidualCouplingBlock | `mlx_rvc/models/flow.py` | 1 test | Normalizing flow |
+| SynthesizerTrnMs768NSFsid | `mlx_rvc/models/synthesizer.py` | 5 tests | Full synthesizer model |
+| Weight Conversion | `mlx_rvc/weights/convert.py` | ✅ | PyTorch → SafeTensors |
+| Weight Loading | `mlx_rvc/weights/loader.py` | ✅ | Load weights into MLX models |
+| Inference Pipeline | `mlx_rvc/pipeline.py` | ✅ | End-to-end voice conversion |
+| CLI Interface | `mlx_rvc/cli.py` | ✅ | `mlx-rvc convert` and `mlx-rvc info` commands |
 | RMVPE F0 Extraction | `mlx-rmvpe` (PyPI) | ✅ | Separate package, auto-downloads from HuggingFace |
-| FAISS Index Blending | `rvc_mlx/index/faiss_index.py` | ✅ | Optional dependency, improves voice similarity |
+| FAISS Index Blending | `mlx_rvc/index/faiss_index.py` | ✅ | Optional dependency, improves voice similarity |
 
 **Total: 59 tests passing**
 
@@ -54,10 +54,10 @@ This document outlines the plan for building an MLX-native implementation of RVC
 
 ### Installation
 
-RMVPE is automatically installed as a dependency of rvc-mlx. Weights are auto-downloaded from HuggingFace on first use.
+RMVPE is automatically installed as a dependency of mlx-rvc. Weights are auto-downloaded from HuggingFace on first use.
 
 ```bash
-# Already included via rvc-mlx dependencies
+# Already included via mlx-rvc dependencies
 uv pip install mlx-rmvpe
 ```
 
@@ -76,7 +76,7 @@ f0 = model.infer_from_audio(audio)
 Or via CLI:
 
 ```bash
-rvc-mlx convert input.wav output.wav --model voice.pth --f0-method rmvpe
+mlx-rvc convert input.wav output.wav --model voice.pth --f0-method rmvpe
 ```
 
 ### Why RMVPE?
@@ -114,7 +114,7 @@ model = RMVPE.from_pretrained(repo_id="my-org/my-rmvpe")
 
 **Goal**: Blend ContentVec features with similar features from the training set to improve voice similarity.
 
-**Status**: Implemented in `rvc_mlx/index/faiss_index.py` as an optional feature.
+**Status**: Implemented in `mlx_rvc/index/faiss_index.py` as an optional feature.
 
 ### Installation
 
@@ -129,7 +129,7 @@ uv sync --extra index
 ### Usage
 
 ```python
-from rvc_mlx import RVCPipeline
+from mlx_rvc import RVCPipeline
 
 pipeline = RVCPipeline.from_pretrained("voice.pth")
 pipeline.convert(
@@ -143,7 +143,7 @@ pipeline.convert(
 Or via CLI:
 
 ```bash
-rvc-mlx convert input.wav output.wav --model voice.pth --index voice.index --index-rate 0.5
+mlx-rvc convert input.wav output.wav --model voice.pth --index voice.index --index-rate 0.5
 ```
 
 ### How It Works
@@ -172,7 +172,7 @@ import faiss
 faiss.omp_set_num_threads(1)
 ```
 
-This is automatically applied when importing `rvc_mlx.index`. The performance impact is minimal since index search is not the bottleneck.
+This is automatically applied when importing `mlx_rvc.index`. The performance impact is minimal since index search is not the bottleneck.
 
 ---
 
@@ -426,7 +426,7 @@ Need conversion script: PyTorch → SafeTensors for MLX.
 ## Project Structure (Current)
 
 ```
-rvc_mlx/
+mlx_rvc/
 ├── __init__.py
 ├── audio/
 │   ├── __init__.py
@@ -518,7 +518,7 @@ for i in range(num_harmonics):
     phase = cumsum(2 * pi * f0 * (i+1) / sr)
     harmonic = sin(phase)
 ```
-**Solution**: Implemented in `rvc_mlx/models/nsf.py` with careful phase continuity handling using `mx.remainder` for modulo operations and masking for voiced/unvoiced transitions.
+**Solution**: Implemented in `mlx_rvc/models/nsf.py` with careful phase continuity handling using `mx.remainder` for modulo operations and masking for voiced/unvoiced transitions.
 
 ### 2. Transposed Convolutions ✅ SOLVED
 MLX has `conv_transpose1d` but need to verify behavior matches PyTorch exactly, especially with:
@@ -526,7 +526,7 @@ MLX has `conv_transpose1d` but need to verify behavior matches PyTorch exactly, 
 - Output padding
 - Weight normalization
 
-**Solution**: `WeightNormConvTranspose1d` in `rvc_mlx/models/commons.py` validates against PyTorch reference with 6 passing tests.
+**Solution**: `WeightNormConvTranspose1d` in `mlx_rvc/models/commons.py` validates against PyTorch reference with 6 passing tests.
 
 ### 3. Weight Normalization ✅ SOLVED
 Used extensively in generator. Need to implement:
@@ -536,12 +536,12 @@ def weight_norm_forward(v, g):
     norm = sqrt(sum(v ** 2, axis=...))
     return g * v / norm
 ```
-**Solution**: `WeightNormConv1d` and `WeightNormConvTranspose1d` classes in `rvc_mlx/models/commons.py`.
+**Solution**: `WeightNormConv1d` and `WeightNormConvTranspose1d` classes in `mlx_rvc/models/commons.py`.
 
 ### 4. Flow Reversibility ✅ SOLVED
 The coupling layers must work correctly in reverse mode for inference.
 
-**Solution**: `ResidualCouplingBlock` in `rvc_mlx/models/flow.py` with proper forward/reverse modes. Uses `Flip` operation with channel reversal via `x[:, ::-1, :]`.
+**Solution**: `ResidualCouplingBlock` in `mlx_rvc/models/flow.py` with proper forward/reverse modes. Uses `Flip` operation with channel reversal via `x[:, ::-1, :]`.
 
 ### 5. MLX API Differences (Discovered During Implementation)
 Several MLX API differences from PyTorch required workarounds:
@@ -571,22 +571,22 @@ Several MLX API differences from PyTorch required workarounds:
 
 ```bash
 # Basic usage
-rvc-mlx convert input.wav output.wav --model voice.pth
+mlx-rvc convert input.wav output.wav --model voice.pth
 
 # With RMVPE for singing (auto-downloads weights)
-rvc-mlx convert input.wav output.wav --model voice.pth --f0-method rmvpe
+mlx-rvc convert input.wav output.wav --model voice.pth --f0-method rmvpe
 
 # With pitch shift
-rvc-mlx convert input.wav output.wav --model voice.pth --pitch 5
+mlx-rvc convert input.wav output.wav --model voice.pth --pitch 5
 
 # With FAISS index blending for improved voice similarity
-rvc-mlx convert input.wav output.wav --model voice.pth --index voice.index
+mlx-rvc convert input.wav output.wav --model voice.pth --index voice.index
 
 # Adjust index blending rate (0 = original only, 1 = index only)
-rvc-mlx convert input.wav output.wav --model voice.pth --index voice.index --index-rate 0.75
+mlx-rvc convert input.wav output.wav --model voice.pth --index voice.index --index-rate 0.75
 
 # Show model info
-rvc-mlx info voice.pth
+mlx-rvc info voice.pth
 ```
 
 ## Model Compatibility
@@ -674,30 +674,30 @@ weight_v: torch.Size([out_ch, in_ch, kernel])  # direction
 
 ### Phase 1 Complete!
 
-1. ✅ **Weight Conversion Script** (`rvc_mlx/weights/convert.py`)
-2. ✅ **Pipeline Integration** (`rvc_mlx/pipeline.py`)
-3. ✅ **CLI Interface** (`rvc_mlx/cli.py`)
+1. ✅ **Weight Conversion Script** (`mlx_rvc/weights/convert.py`)
+2. ✅ **Pipeline Integration** (`mlx_rvc/pipeline.py`)
+3. ✅ **CLI Interface** (`mlx_rvc/cli.py`)
 
 ```bash
 # Convert voice
-rvc-mlx convert input.wav output.wav --model voice.pth
+mlx-rvc convert input.wav output.wav --model voice.pth
 
 # With pitch shift
-rvc-mlx convert input.wav output.wav --model voice.pth --pitch 5
+mlx-rvc convert input.wav output.wav --model voice.pth --pitch 5
 
 # Show model info
-rvc-mlx info voice.pth
+mlx-rvc info voice.pth
 ```
 
 ### HuggingFace Weights
 
-Pre-converted MLX weights available at: `lexandstuff/rvc-mlx-weights`
+Pre-converted MLX weights available at: `lexandstuff/mlx-rvc-weights`
 
 ```python
 from huggingface_hub import hf_hub_download
 
 # Download 40kHz model
-weights_path = hf_hub_download("lexandstuff/rvc-mlx-weights", "v2/f0G40k.safetensors")
+weights_path = hf_hub_download("lexandstuff/mlx-rvc-weights", "v2/f0G40k.safetensors")
 ```
 
 ### Weight Loading Strategy
@@ -731,7 +731,7 @@ emb_g.weight                 # Embedding(109, 256)
 
 After weight conversion:
 ```python
-from rvc_mlx.models import SynthesizerTrnMs768NSFsid
+from mlx_rvc.models import SynthesizerTrnMs768NSFsid
 from safetensors import safe_open
 
 model = SynthesizerTrnMs768NSFsid(**config)

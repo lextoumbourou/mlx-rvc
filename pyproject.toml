@@ -1,5 +1,5 @@
 [project]
-name = "rvc-mlx"
+name = "mlx-rvc"
 version = "0.1.0"
 description = "Retrieval-based Voice Conversion for Apple Silicon using MLX"
 readme = "README.md"
@@ -27,7 +27,7 @@ dev = [
 ]
 
 [project.scripts]
-rvc-mlx = "rvc_mlx.cli:main"
+mlx-rvc = "mlx_rvc.cli:main"
 
 [tool.uv]
 package = true

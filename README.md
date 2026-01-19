@@ -1,4 +1,4 @@
-# RVC-MLX
+# MLX-RVC
 
 An MLX port of [Retrieval-based-Voice-Conversion-WebUI (RVC)](https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI) for Apple Silicon.
 
@@ -17,14 +17,14 @@ An MLX port of [Retrieval-based-Voice-Conversion-WebUI (RVC)](https://github.com
 ## Installation
 
 ```bash
-uv pip install rvc-mlx
+uv pip install mlx-rvc
 ```
 
 Or install from source:
 
 ```bash
-git clone https://github.com/lucasnewman/rvc-mlx
-cd rvc-mlx
+git clone https://github.com/lextoumbourou/mlx-rvc
+cd mlx-rvc
 uv pip install -e .
 ```
 
@@ -35,7 +35,7 @@ For improved voice similarity via index blending:
 ```bash
 uv pip install faiss-cpu
 # or install with the index extra:
-uv pip install rvc-mlx[index]
+uv pip install mlx-rvc[index]
 ```
 
 ## Pretrained Weights
@@ -47,12 +47,12 @@ from huggingface_hub import hf_hub_download
 
 # Download 48kHz model (recommended)
 weights_path = hf_hub_download(
-    repo_id="lexandstuff/rvc-mlx-weights",
+    repo_id="lexandstuff/mlx-rvc-weights",
     filename="v2/f0G48k.safetensors"
 )
 
 config_path = hf_hub_download(
-    repo_id="lexandstuff/rvc-mlx-weights",
+    repo_id="lexandstuff/mlx-rvc-weights",
     filename="v2/config.json"
 )
 ```
@@ -71,28 +71,28 @@ Available models:
 
 ```bash
 # Basic voice conversion
-rvc-mlx convert input.wav output.wav --model voice.pth
+mlx-rvc convert input.wav output.wav --model voice.pth
 
 # With pitch shift (+5 semitones for higher pitch)
-rvc-mlx convert input.wav output.wav --model voice.pth --pitch 5
+mlx-rvc convert input.wav output.wav --model voice.pth --pitch 5
 
 # Use RMVPE for better singing voice detection
-rvc-mlx convert input.wav output.wav --model voice.pth --f0-method rmvpe
+mlx-rvc convert input.wav output.wav --model voice.pth --f0-method rmvpe
 
 # With FAISS index blending for improved voice similarity
-rvc-mlx convert input.wav output.wav --model voice.pth --index voice.index
+mlx-rvc convert input.wav output.wav --model voice.pth --index voice.index
 
 # Adjust index blending rate (0.0 = original only, 1.0 = index only)
-rvc-mlx convert input.wav output.wav --model voice.pth --index voice.index --index-rate 0.75
+mlx-rvc convert input.wav output.wav --model voice.pth --index voice.index --index-rate 0.75
 
 # Show model information
-rvc-mlx info voice.pth
+mlx-rvc info voice.pth
 ```
 
 ### Python API
 
 ```python
-from rvc_mlx import RVCPipeline
+from mlx_rvc import RVCPipeline
 
 # Load pipeline from model file
 pipeline = RVCPipeline.from_pretrained("voice.pth")
@@ -116,7 +116,7 @@ pipeline.convert(
 Or use the simple function:
 
 ```python
-from rvc_mlx import convert_voice
+from mlx_rvc import convert_voice
 
 convert_voice(
     input_path="input.wav",
@@ -128,7 +128,7 @@ convert_voice(
 
 ## Architecture
 
-RVC-MLX implements the full RVC v2 inference pipeline:
+MLX-RVC implements the full RVC v2 inference pipeline:
 
 ```
 Audio Input

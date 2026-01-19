@@ -5,8 +5,8 @@ import numpy as np
 import pytest
 from pathlib import Path
 
-from rvc_mlx.audio.io import load_audio, save_audio
-from rvc_mlx.audio.processing import (
+from mlx_rvc.audio.io import load_audio, save_audio
+from mlx_rvc.audio.processing import (
     normalize_audio,
     change_rms,
     compute_rms,

@@ -734,6 +734,62 @@ wheels = [
 ]
 
 [[package]]
+name = "mlx-rvc"
+version = "0.1.0"
+source = { editable = "." }
+dependencies = [
+    { name = "huggingface-hub" },
+    { name = "mlx" },
+    { name = "mlx-contentvec" },
+    { name = "mlx-rmvpe" },
+    { name = "numpy" },
+    { name = "pyworld" },
+    { name = "safetensors" },
+    { name = "scipy" },
+    { name = "setuptools" },
+]
+
+[package.optional-dependencies]
+dev = [
+    { name = "faiss-cpu" },
+    { name = "pytest" },
+    { name = "pytest-cov" },
+]
+index = [
+    { name = "faiss-cpu" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "pytest" },
+    { name = "torch" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "faiss-cpu", marker = "extra == 'dev'", specifier = ">=1.7.0" },
+    { name = "faiss-cpu", marker = "extra == 'index'", specifier = ">=1.7.0" },
+    { name = "huggingface-hub", specifier = ">=0.20.0" },
+    { name = "mlx", specifier = ">=0.20.0" },
+    { name = "mlx-contentvec", specifier = ">=0.1.0" },
+    { name = "mlx-rmvpe", specifier = ">=0.1.0" },
+    { name = "numpy", specifier = ">=1.24.0" },
+    { name = "pytest", marker = "extra == 'dev'", specifier = ">=7.0.0" },
+    { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=4.0.0" },
+    { name = "pyworld", specifier = ">=0.3.4" },
+    { name = "safetensors", specifier = ">=0.4.0" },
+    { name = "scipy", specifier = ">=1.11.0" },
+    { name = "setuptools", specifier = ">=80.9.0" },
+]
+provides-extras = ["index", "dev"]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "pytest", specifier = ">=8.4.2" },
+    { name = "torch", specifier = ">=2.9.1" },
+]
+
+[[package]]
 name = "mpmath"
 version = "1.3.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1227,62 +1283,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/c9/74/b3ff8e6c8446842c3f5c837e9c3dfcfe2018ea6ecef224c710c85ef728f4/requests-2.32.5.tar.gz", hash = "sha256:dbba0bac56e100853db0ea71b82b4dfd5fe2bf6d3754a8893c3af500cec7d7cf", size = 134517 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/1e/db/4254e3eabe8020b458f1a747140d32277ec7a271daf1d235b70dc0b4e6e3/requests-2.32.5-py3-none-any.whl", hash = "sha256:2462f94637a34fd532264295e186976db0f5d453d1cdd31473c85a6a161affb6", size = 64738 },
-]
-
-[[package]]
-name = "rvc-mlx"
-version = "0.1.0"
-source = { editable = "." }
-dependencies = [
-    { name = "huggingface-hub" },
-    { name = "mlx" },
-    { name = "mlx-contentvec" },
-    { name = "mlx-rmvpe" },
-    { name = "numpy" },
-    { name = "pyworld" },
-    { name = "safetensors" },
-    { name = "scipy" },
-    { name = "setuptools" },
-]
-
-[package.optional-dependencies]
-dev = [
-    { name = "faiss-cpu" },
-    { name = "pytest" },
-    { name = "pytest-cov" },
-]
-index = [
-    { name = "faiss-cpu" },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "pytest" },
-    { name = "torch" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "faiss-cpu", marker = "extra == 'dev'", specifier = ">=1.7.0" },
-    { name = "faiss-cpu", marker = "extra == 'index'", specifier = ">=1.7.0" },
-    { name = "huggingface-hub", specifier = ">=0.20.0" },
-    { name = "mlx", specifier = ">=0.20.0" },
-    { name = "mlx-contentvec", specifier = ">=0.1.0" },
-    { name = "mlx-rmvpe", specifier = ">=0.1.0" },
-    { name = "numpy", specifier = ">=1.24.0" },
-    { name = "pytest", marker = "extra == 'dev'", specifier = ">=7.0.0" },
-    { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=4.0.0" },
-    { name = "pyworld", specifier = ">=0.3.4" },
-    { name = "safetensors", specifier = ">=0.4.0" },
-    { name = "scipy", specifier = ">=1.11.0" },
-    { name = "setuptools", specifier = ">=80.9.0" },
-]
-provides-extras = ["index", "dev"]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "pytest", specifier = ">=8.4.2" },
-    { name = "torch", specifier = ">=2.9.1" },
 ]
 
 [[package]]

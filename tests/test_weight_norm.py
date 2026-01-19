@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 import mlx.core as mx
 
-from rvc_mlx.models.commons import WeightNormConv1d, WeightNormConvTranspose1d
+from mlx_rvc.models.commons import WeightNormConv1d, WeightNormConvTranspose1d
 
 # Only import torch for comparison tests
 torch = pytest.importorskip("torch")

@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 import mlx.core as mx
 
-from rvc_mlx.models import SynthesizerTrnMs768NSFsid
+from mlx_rvc.models import SynthesizerTrnMs768NSFsid
 
 
 class TestSynthesizerBasic:
@@ -86,7 +86,7 @@ class TestSynthesizerComponents:
 
     def test_text_encoder_shapes(self):
         """Test TextEncoder output shapes."""
-        from rvc_mlx.models import TextEncoder
+        from mlx_rvc.models import TextEncoder
 
         enc = TextEncoder(
             in_channels=768,
@@ -112,7 +112,7 @@ class TestSynthesizerComponents:
 
     def test_flow_shapes(self):
         """Test ResidualCouplingBlock output shapes."""
-        from rvc_mlx.models import ResidualCouplingBlock
+        from mlx_rvc.models import ResidualCouplingBlock
 
         flow = ResidualCouplingBlock(
             channels=192,

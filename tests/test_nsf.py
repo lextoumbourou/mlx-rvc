@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 import mlx.core as mx
 
-from rvc_mlx.models.nsf import SineGen, SourceModuleHnNSF
+from mlx_rvc.models.nsf import SineGen, SourceModuleHnNSF
 
 torch = pytest.importorskip("torch")
 from torch import nn

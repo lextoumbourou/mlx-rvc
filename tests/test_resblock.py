@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 import mlx.core as mx
 
-from rvc_mlx.models.resblock import ResBlock1, ResBlock2
+from mlx_rvc.models.resblock import ResBlock1, ResBlock2
 
 torch = pytest.importorskip("torch")
 from torch import nn

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""RVC-MLX command-line interface."""
+"""MLX-RVC command-line interface."""
 
 import argparse
 import sys
@@ -101,7 +101,7 @@ def cmd_info(args):
 def create_parser():
     """Create argument parser."""
     parser = argparse.ArgumentParser(
-        prog="rvc-mlx",
+        prog="mlx-rvc",
         description="RVC voice conversion for Apple Silicon using MLX",
     )
     parser.add_argument(

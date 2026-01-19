@@ -1,1 +1,1 @@
-"""Tests for rvc-mlx."""
+"""Tests for mlx-rvc."""

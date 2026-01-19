@@ -3,8 +3,8 @@
 import numpy as np
 import pytest
 
-from rvc_mlx.f0.harvest import extract_f0_harvest, get_f0_frame_count
-from rvc_mlx.f0.processing import (
+from mlx_rvc.f0.harvest import extract_f0_harvest, get_f0_frame_count
+from mlx_rvc.f0.processing import (
     shift_f0,
     f0_to_mel,
     f0_to_coarse,

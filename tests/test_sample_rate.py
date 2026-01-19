@@ -4,8 +4,8 @@ import math
 import pytest
 import numpy as np
 
-from rvc_mlx.weights import validate_config, SAMPLE_RATE_CONFIGS
-from rvc_mlx.models.generator import GeneratorNSF
+from mlx_rvc.weights import validate_config, SAMPLE_RATE_CONFIGS
+from mlx_rvc.models.generator import GeneratorNSF
 
 
 class TestSampleRateConfigs:
