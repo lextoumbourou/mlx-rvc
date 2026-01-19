@@ -667,7 +667,7 @@ wheels = [
 
 [[package]]
 name = "mlx-contentvec"
-version = "0.1.0"
+version = "0.1.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "huggingface-hub" },
@@ -677,9 +677,9 @@ dependencies = [
     { name = "safetensors" },
     { name = "soundfile" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/9c/4b/5a819aa9b03b4fd36f41b2d98893abbb46ce5ec109a7a6a856d47889f959/mlx_contentvec-0.1.0.tar.gz", hash = "sha256:271310bf6e2bc7c06fe1a9686c28a2733cc5585193a25f56e09e3ddcb9909f09", size = 32260 }
+sdist = { url = "https://files.pythonhosted.org/packages/d9/9b/88e4f18163778f0717425bb15652885a3d6ed92469e40d616cd66024de6c/mlx_contentvec-0.1.1.tar.gz", hash = "sha256:af349e55849beb8a71bcf06763d125a2417ebd15e4c0b8991a775b3ac7c36d19", size = 32648 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/cd/9e/f56b8ab811c3eb1468503943146d5578717839e5582023321517be3d2c9d/mlx_contentvec-0.1.0-py3-none-any.whl", hash = "sha256:8572d9173c0a898916ae7e8492b72930c37f0147e47fb4040db58366838473ba", size = 22316 },
+    { url = "https://files.pythonhosted.org/packages/11/e7/55e1340dc6d22902bd6b990cf8b0714f8ddc3b0b1d85740e33561ba7b4ff/mlx_contentvec-0.1.1-py3-none-any.whl", hash = "sha256:475b01b16bffe08d898fc752c3f234ae0340a6f66d5d84b12a39ff8fbea5de63", size = 22828 },
 ]
 
 [[package]]
@@ -1193,6 +1193,7 @@ name = "rvc-mlx"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "huggingface-hub" },
     { name = "mlx" },
     { name = "mlx-contentvec" },
     { name = "numpy" },
@@ -1216,6 +1217,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "huggingface-hub", specifier = ">=0.20.0" },
     { name = "mlx", specifier = ">=0.20.0" },
     { name = "mlx-contentvec", specifier = ">=0.1.0" },
     { name = "numpy", specifier = ">=1.24.0" },

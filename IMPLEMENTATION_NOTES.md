@@ -25,23 +25,24 @@ This document outlines the plan for building an MLX-native implementation of RVC
 | WN (WaveNet) | `rvc_mlx/models/flow.py` | ✅ | Dilated convolutions |
 | ResidualCouplingBlock | `rvc_mlx/models/flow.py` | 1 test | Normalizing flow |
 | SynthesizerTrnMs768NSFsid | `rvc_mlx/models/synthesizer.py` | 5 tests | Full synthesizer model |
+| Weight Conversion | `rvc_mlx/weights/convert.py` | ✅ | PyTorch → SafeTensors |
+| Weight Loading | `rvc_mlx/weights/loader.py` | ✅ | Load weights into MLX models |
+| Inference Pipeline | `rvc_mlx/pipeline.py` | ✅ | End-to-end voice conversion |
+| CLI Interface | `rvc_mlx/cli.py` | ✅ | `rvc-mlx convert` and `rvc-mlx info` commands |
 
 **Total: 59 tests passing**
 
+**🎉 Voice conversion is working!** Successfully tested with real RVC model.
+
 ### In Progress 🔄
 
-| Component | Status | Notes |
-|-----------|--------|-------|
-| Weight Conversion | Not started | PyTorch → SafeTensors |
-| Pipeline Integration | Not started | ContentVec → Synthesizer → Audio |
-| CLI Interface | Not started | Command-line tool |
+*No items currently in progress*
 
 ### Not Started 📋
 
-- FAISS Index Blending
-- RMVPE F0 Extraction
-- Multiple Sample Rate Support (32k/40k - 48k done)
-- V1 Model Support
+- FAISS Index Blending (improves quality)
+- RMVPE F0 Extraction (better pitch detection)
+- V1 Model Support (256-dim variant)
 
 ## What We Already Have
 
@@ -298,10 +299,12 @@ rvc_mlx/
 │   ├── nsf.py               # ✅ SineGen, SourceModuleHnNSF
 │   ├── attentions.py        # ✅ MultiHeadAttention, Encoder, FFN
 │   └── commons.py           # ✅ WeightNormConv1d, utilities
-├── pipeline.py              # 📋 TODO: Main inference pipeline
-├── cli.py                   # 📋 TODO: Command-line interface
-└── weights/
-    └── convert.py           # 📋 TODO: PyTorch → SafeTensors
+├── weights/
+│   ├── __init__.py          # ✅ Exports weight utilities
+│   ├── convert.py           # ✅ PyTorch → SafeTensors conversion
+│   └── loader.py            # ✅ Load weights into MLX models
+├── pipeline.py              # ✅ End-to-end inference pipeline
+└── cli.py                   # ✅ Command-line interface
 
 tests/
 ├── test_audio.py            # ✅ 12 tests
@@ -312,24 +315,35 @@ tests/
 ├── test_generator.py        # ✅ 5 tests
 └── test_synthesizer.py      # ✅ 5 tests
 
+scripts/
+└── upload_weights.py        # ✅ Upload weights to HuggingFace
+
+weights/                     # Converted MLX weights for HuggingFace
+├── README.md                # HuggingFace model card
+└── v2/
+    ├── config.json          # Model configurations
+    ├── f0G32k.safetensors   # V2 32kHz with F0
+    ├── f0G40k.safetensors   # V2 40kHz with F0
+    └── f0G48k.safetensors   # V2 48kHz with F0
+
 vendor/
 ├── weights/
-│   └── f0G48k.pth           # ✅ Reference PyTorch weights (72MB)
+│   └── f0G48k.pth           # Reference PyTorch weights (72MB)
 └── Retrieval-based-Voice-Conversion-WebUI/  # Reference implementation
 ```
 
 ## Implementation Order
 
-### Phase 1: Minimal Working Pipeline
+### Phase 1: Minimal Working Pipeline ✅ COMPLETE
 1. ✅ **Audio I/O** - Load/save with FFmpeg, basic processing
 2. ✅ **F0 Extraction** - Integrate pyworld (Harvest method)
 3. ✅ **GeneratorNSF** - Core decoder (most complex, start early)
 4. ✅ **TextEncoder** - Relatively simple transformer
 5. ✅ **ResidualCouplingBlock** - Flow layers
 6. ✅ **SynthesizerTrnMs768NSFsid** - Combine all components
-7. 🔄 **Weight Conversion** - PyTorch → SafeTensors
-8. 🔄 **Pipeline Integration** - Wire everything together
-9. 🔄 **CLI** - Basic command-line interface
+7. ✅ **Weight Conversion** - PyTorch → SafeTensors
+8. ✅ **Pipeline Integration** - Wire everything together
+9. ✅ **CLI** - Basic command-line interface
 
 ### Phase 2: Quality & Features
 10. **FAISS Index Blending** - Improve conversion quality
@@ -505,24 +519,33 @@ weight_v: torch.Size([out_ch, in_ch, kernel])  # direction
 
 ## Next Steps
 
-### Immediate (Phase 1 Completion)
+### Phase 1 Complete!
 
-1. **Weight Conversion Script** (`rvc_mlx/weights/convert.py`)
-   - Load PyTorch `.pth` checkpoint
-   - Convert weight shapes (PyTorch → MLX conventions)
-   - Save as SafeTensors for fast loading
-   - Handle weight normalization decomposition (weight_v, weight_g)
+1. ✅ **Weight Conversion Script** (`rvc_mlx/weights/convert.py`)
+2. ✅ **Pipeline Integration** (`rvc_mlx/pipeline.py`)
+3. ✅ **CLI Interface** (`rvc_mlx/cli.py`)
 
-2. **Pipeline Integration** (`rvc_mlx/pipeline.py`)
-   - Wire ContentVec → Synthesizer → Audio output
-   - Handle sample rate conversions
-   - Add RMS volume matching
-   - Support streaming for long audio
+```bash
+# Convert voice
+rvc-mlx convert input.wav output.wav --model voice.pth
 
-3. **CLI Interface** (`rvc_mlx/cli.py`)
-   ```bash
-   rvc-mlx convert input.wav output.wav --model voice.safetensors
-   ```
+# With pitch shift
+rvc-mlx convert input.wav output.wav --model voice.pth --pitch 5
+
+# Show model info
+rvc-mlx info voice.pth
+```
+
+### HuggingFace Weights
+
+Pre-converted MLX weights available at: `lexandstuff/rvc-mlx-weights`
+
+```python
+from huggingface_hub import hf_hub_download
+
+# Download 40kHz model
+weights_path = hf_hub_download("lexandstuff/rvc-mlx-weights", "v2/f0G40k.safetensors")
+```
 
 ### Weight Loading Strategy
 

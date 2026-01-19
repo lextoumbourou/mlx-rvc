@@ -2,7 +2,7 @@
 
 An MLX port of [Retrieval-based-Voice-Conversion-WebUI (RVC)](https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI) for Apple Silicon.
 
-> **Status**: Core model implementation complete. Pipeline integration in progress.
+> **Status**: Phase 1 complete! Voice conversion is fully working.
 
 ## Features
 
@@ -10,6 +10,7 @@ An MLX port of [Retrieval-based-Voice-Conversion-WebUI (RVC)](https://github.com
 - Full SynthesizerTrnMs768NSFsid implementation
 - Support for 32kHz, 40kHz, and 48kHz models
 - F0 (pitch) extraction via pyworld
+- Simple CLI and Python API
 
 ## Installation
 
@@ -54,24 +55,46 @@ Available models:
 
 ## Usage
 
+### Command Line
+
+```bash
+# Basic voice conversion
+rvc-mlx convert input.wav output.wav --model voice.pth
+
+# With pitch shift (+5 semitones for higher pitch)
+rvc-mlx convert input.wav output.wav --model voice.pth --pitch 5
+
+# Show model information
+rvc-mlx info voice.pth
+```
+
+### Python API
+
 ```python
-import json
-import mlx.core as mx
-from safetensors.numpy import load_file
-from rvc_mlx.models import SynthesizerTrnMs768NSFsid
+from rvc_mlx import RVCPipeline
 
-# Load config
-with open(config_path) as f:
-    config = json.load(f)["48000"]
+# Load pipeline from model file
+pipeline = RVCPipeline.from_pretrained("voice.pth")
 
-# Create model
-model = SynthesizerTrnMs768NSFsid(**config)
+# Convert voice
+pipeline.convert(
+    input_path="input.wav",
+    output_path="output.wav",
+    f0_shift=0,  # Pitch shift in semitones
+)
+```
 
-# Load weights (weight loading utility coming soon)
-weights = load_file(weights_path)
+Or use the simple function:
 
-# Run inference
-# audio, mask, _ = model.infer(phone, phone_lengths, pitch, f0, sid)
+```python
+from rvc_mlx import convert_voice
+
+convert_voice(
+    input_path="input.wav",
+    output_path="output.wav",
+    model_path="voice.pth",
+    f0_shift=5,  # Shift pitch up 5 semitones
+)
 ```
 
 ## Architecture
