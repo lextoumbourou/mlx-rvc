@@ -87,6 +87,8 @@ class RVCPipeline:
         speaker_id: int = 0,
         f0_shift: int = 0,
         f0_method: Optional[str] = None,
+        index_path: Optional[Union[str, Path]] = None,
+        index_rate: float = 0.5,
     ) -> np.ndarray:
         """
         Convert voice in audio file.
@@ -97,6 +99,8 @@ class RVCPipeline:
             speaker_id: Speaker ID for voice conversion
             f0_shift: Pitch shift in semitones (-12 to +12)
             f0_method: F0 extraction method (default: "harvest")
+            index_path: Path to FAISS index file for feature blending (optional)
+            index_rate: Index blending rate (0 = original only, 1 = index only, default: 0.5)
 
         Returns:
             Converted audio as numpy array
@@ -111,6 +115,10 @@ class RVCPipeline:
         # Extract features
         print("Extracting ContentVec features...")
         phone = self._extract_contentvec(audio_16k)
+
+        # Apply index blending if provided
+        if index_path is not None and index_rate > 0:
+            phone = self._blend_with_index(phone, index_path, index_rate)
 
         print(f"Extracting F0 ({f0_method})...")
         f0, f0_coarse = self._extract_f0(audio_16k, f0_shift, f0_method)
@@ -142,6 +150,44 @@ class RVCPipeline:
         save_audio(output_path, audio_out, sr=self.sample_rate)
 
         return audio_out
+
+    def _blend_with_index(
+        self,
+        phone: np.ndarray,
+        index_path: Union[str, Path],
+        index_rate: float,
+    ) -> np.ndarray:
+        """
+        Blend ContentVec features with FAISS index for improved voice similarity.
+
+        Args:
+            phone: ContentVec features, shape (batch, frames, 768)
+            index_path: Path to FAISS index file
+            index_rate: Blend ratio (0 = original, 1 = index features)
+
+        Returns:
+            Blended features, same shape as input
+        """
+        from .index import load_index
+
+        index_path = Path(index_path)
+        if not index_path.exists():
+            print(f"Warning: Index file not found: {index_path}, skipping blending")
+            return phone
+
+        print(f"Loading FAISS index: {index_path}")
+        index = load_index(index_path)
+
+        if index is None:
+            print("Warning: FAISS not available, skipping index blending")
+            print("Install with: uv pip install faiss-cpu")
+            return phone
+
+        print(f"Blending features (index_rate={index_rate})...")
+        # phone is (batch, frames, 768), blend expects (frames, 768) or (batch, frames, 768)
+        blended = index.blend(phone, index_rate=index_rate, k=8)
+
+        return blended
 
     def _extract_contentvec(self, audio: np.ndarray) -> np.ndarray:
         """Extract ContentVec features from audio."""

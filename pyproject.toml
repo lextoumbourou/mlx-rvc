@@ -17,9 +17,13 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+index = [
+    "faiss-cpu>=1.7.0",
+]
 dev = [
     "pytest>=7.0.0",
     "pytest-cov>=4.0.0",
+    "faiss-cpu>=1.7.0",
 ]
 
 [project.scripts]

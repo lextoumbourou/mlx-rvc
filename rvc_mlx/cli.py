@@ -33,6 +33,8 @@ def cmd_convert(args):
         speaker_id=args.speaker_id,
         f0_shift=args.pitch,
         f0_method=args.f0_method,
+        index_path=args.index,
+        index_rate=args.index_rate,
     )
 
     print(f"Done! Output saved to: {args.output}")
@@ -147,6 +149,18 @@ def create_parser():
         choices=["harvest", "rmvpe"],
         default="harvest",
         help="F0 extraction method: harvest (fast) or rmvpe (better for singing, auto-downloads weights)",
+    )
+    convert_parser.add_argument(
+        "-i", "--index",
+        default=None,
+        help="Path to FAISS index file for feature blending (improves voice similarity)",
+    )
+    convert_parser.add_argument(
+        "--index-rate",
+        type=float,
+        default=0.5,
+        metavar="RATE",
+        help="Index blending rate: 0.0 = original only, 1.0 = index only (default: 0.5)",
     )
     convert_parser.set_defaults(func=cmd_convert)
 

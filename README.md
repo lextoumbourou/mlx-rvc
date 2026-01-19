@@ -11,12 +11,13 @@ An MLX port of [Retrieval-based-Voice-Conversion-WebUI (RVC)](https://github.com
 - Support for 32kHz, 40kHz, and 48kHz models
 - F0 (pitch) extraction via Harvest or RMVPE
 - RMVPE support for better singing voice pitch detection
+- FAISS index blending for improved voice similarity (optional)
 - Simple CLI and Python API
 
 ## Installation
 
 ```bash
-pip install rvc-mlx
+uv pip install rvc-mlx
 ```
 
 Or install from source:
@@ -24,7 +25,17 @@ Or install from source:
 ```bash
 git clone https://github.com/lucasnewman/rvc-mlx
 cd rvc-mlx
-pip install -e .
+uv pip install -e .
+```
+
+### Optional: FAISS Index Support
+
+For improved voice similarity via index blending:
+
+```bash
+uv pip install faiss-cpu
+# or install with the index extra:
+uv pip install rvc-mlx[index]
 ```
 
 ## Pretrained Weights
@@ -68,6 +79,12 @@ rvc-mlx convert input.wav output.wav --model voice.pth --pitch 5
 # Use RMVPE for better singing voice detection
 rvc-mlx convert input.wav output.wav --model voice.pth --f0-method rmvpe
 
+# With FAISS index blending for improved voice similarity
+rvc-mlx convert input.wav output.wav --model voice.pth --index voice.index
+
+# Adjust index blending rate (0.0 = original only, 1.0 = index only)
+rvc-mlx convert input.wav output.wav --model voice.pth --index voice.index --index-rate 0.75
+
 # Show model information
 rvc-mlx info voice.pth
 ```
@@ -85,6 +102,14 @@ pipeline.convert(
     input_path="input.wav",
     output_path="output.wav",
     f0_shift=0,  # Pitch shift in semitones
+)
+
+# With FAISS index blending
+pipeline.convert(
+    input_path="input.wav",
+    output_path="output.wav",
+    index_path="voice.index",  # Path to FAISS index
+    index_rate=0.5,            # Blend ratio (0=original, 1=index)
 )
 ```
 
@@ -135,7 +160,7 @@ F0 Extraction (Harvest) ──→ Pitch features
 
 ```bash
 # Install dev dependencies
-pip install -e ".[dev]"
+uv pip install -e ".[dev]"
 
 # Run tests
 pytest tests/

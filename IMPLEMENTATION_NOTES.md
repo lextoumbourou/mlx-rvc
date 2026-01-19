@@ -30,6 +30,7 @@ This document outlines the plan for building an MLX-native implementation of RVC
 | Inference Pipeline | `rvc_mlx/pipeline.py` | ✅ | End-to-end voice conversion |
 | CLI Interface | `rvc_mlx/cli.py` | ✅ | `rvc-mlx convert` and `rvc-mlx info` commands |
 | RMVPE F0 Extraction | `mlx-rmvpe` (PyPI) | ✅ | Separate package, auto-downloads from HuggingFace |
+| FAISS Index Blending | `rvc_mlx/index/faiss_index.py` | ✅ | Optional dependency, improves voice similarity |
 
 **Total: 59 tests passing**
 
@@ -41,7 +42,6 @@ This document outlines the plan for building an MLX-native implementation of RVC
 
 ### Not Started 📋
 
-- FAISS Index Blending (improves quality)
 - V1 Model Support (256-dim variant)
 
 ---
@@ -58,7 +58,7 @@ RMVPE is automatically installed as a dependency of rvc-mlx. Weights are auto-do
 
 ```bash
 # Already included via rvc-mlx dependencies
-pip install mlx-rmvpe
+uv pip install mlx-rmvpe
 ```
 
 ### Usage
@@ -107,6 +107,72 @@ model = RMVPE.from_pretrained()
 # Custom repo
 model = RMVPE.from_pretrained(repo_id="my-org/my-rmvpe")
 ```
+
+---
+
+## FAISS Index Blending ✅ COMPLETE
+
+**Goal**: Blend ContentVec features with similar features from the training set to improve voice similarity.
+
+**Status**: Implemented in `rvc_mlx/index/faiss_index.py` as an optional feature.
+
+### Installation
+
+FAISS is an optional dependency. Install with:
+
+```bash
+uv pip install faiss-cpu
+# or
+uv sync --extra index
+```
+
+### Usage
+
+```python
+from rvc_mlx import RVCPipeline
+
+pipeline = RVCPipeline.from_pretrained("voice.pth")
+pipeline.convert(
+    input_path="input.wav",
+    output_path="output.wav",
+    index_path="voice.index",  # Path to FAISS index
+    index_rate=0.5,            # Blend ratio (0=original, 1=index)
+)
+```
+
+Or via CLI:
+
+```bash
+rvc-mlx convert input.wav output.wav --model voice.pth --index voice.index --index-rate 0.5
+```
+
+### How It Works
+
+RVC uses FAISS to store ContentVec features from the training data. During inference, input features are blended with similar features retrieved from the index:
+
+1. For each input frame, find k=8 nearest neighbors in the index
+2. Compute weights as inverse square of distances: `weight = 1 / (distance² + ε)`
+3. Weighted average of retrieved features
+4. Blend with original: `output = retrieved * index_rate + original * (1 - index_rate)`
+
+### Index File Format
+
+RVC index files (`.index`) are FAISS IndexIVFFlat format:
+- **Dimension**: 768 (matches ContentVec output)
+- **Vectors**: Training set ContentVec features
+- Features can be reconstructed via `index.reconstruct_n()`
+
+### OpenMP Conflict Workaround
+
+Both FAISS and MLX use OpenMP on macOS, which causes library conflicts and segfaults when both are loaded. The solution:
+
+```python
+import faiss
+# Use single-threaded mode to avoid OpenMP conflicts with MLX
+faiss.omp_set_num_threads(1)
+```
+
+This is automatically applied when importing `rvc_mlx.index`. The performance impact is minimal since index search is not the bottleneck.
 
 ---
 
@@ -372,7 +438,7 @@ rvc_mlx/
 │   └── processing.py        # ✅ Pitch shift, mel conversion
 ├── index/
 │   ├── __init__.py
-│   └── faiss_blend.py       # 📋 TODO: FAISS index blending
+│   └── faiss_index.py       # ✅ FAISS index loading & blending
 ├── models/
 │   ├── __init__.py          # ✅ Exports all models
 │   ├── synthesizer.py       # ✅ SynthesizerTrnMs768NSFsid
@@ -432,7 +498,7 @@ vendor/
 9. ✅ **CLI** - Basic command-line interface
 
 ### Phase 2: Quality & Features
-10. **FAISS Index Blending** - Improve conversion quality
+10. ✅ **FAISS Index Blending** - Improves conversion quality via feature retrieval
 11. ✅ **RMVPE F0 Extraction** - Better pitch detection (now in `mlx-rmvpe` PyPI package)
 12. **Multiple Sample Rates** - Support 32k/40k/48k models
 13. **V1 Model Support** - Add 256-dim variant
@@ -512,6 +578,12 @@ rvc-mlx convert input.wav output.wav --model voice.pth --f0-method rmvpe
 
 # With pitch shift
 rvc-mlx convert input.wav output.wav --model voice.pth --pitch 5
+
+# With FAISS index blending for improved voice similarity
+rvc-mlx convert input.wav output.wav --model voice.pth --index voice.index
+
+# Adjust index blending rate (0 = original only, 1 = index only)
+rvc-mlx convert input.wav output.wav --model voice.pth --index voice.index --index-rate 0.75
 
 # Show model info
 rvc-mlx info voice.pth
