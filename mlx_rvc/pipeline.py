@@ -31,11 +31,13 @@ class RVCPipeline:
         contentvec: ContentvecModel,
         sample_rate: int = 40000,
         f0_method: str = "harvest",
+        in_channels: int = 768,
     ):
         self.synthesizer = synthesizer
         self.contentvec = contentvec
         self.sample_rate = sample_rate
         self.f0_method = f0_method
+        self.in_channels = in_channels  # 768 for v2, 256 for v1
 
         # ContentVec operates at 16kHz with ~50fps output
         self.contentvec_sr = 16000
@@ -65,7 +67,10 @@ class RVCPipeline:
         weights, config = load_checkpoint(model_path)
         synthesizer = SynthesizerTrnMs768NSFsid(**config)
         load_model(synthesizer, weights)
-        print(f"Loaded RVC model: {config.get('version', 'unknown')} @ {config.get('sr', 'unknown')}Hz")
+
+        version = config.get('version', 'v2' if config.get('in_channels', 768) == 768 else 'v1')
+        in_channels = config.get('in_channels', 768)
+        print(f"Loaded RVC model: {version} @ {config.get('sr', 'unknown')}Hz (in_channels={in_channels})")
 
         # Load ContentVec (auto-downloads weights if needed)
         if contentvec_path is None:
@@ -78,6 +83,7 @@ class RVCPipeline:
             synthesizer=synthesizer,
             contentvec=contentvec,
             sample_rate=config.get("sr", 40000),
+            in_channels=in_channels,
         )
 
     def convert(
@@ -201,6 +207,11 @@ class RVCPipeline:
 
         # Get features: (batch, frames, 768)
         features = np.array(result["x"])
+
+        # For v1 models, slice to first 256 dimensions
+        if self.in_channels == 256:
+            features = features[:, :, :256]
+
         return features
 
     def _extract_f0(

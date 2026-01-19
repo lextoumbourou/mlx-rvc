@@ -110,8 +110,8 @@ def load_checkpoint(path: Union[str, Path]) -> tuple[dict[str, np.ndarray], dict
             arr = value.float().numpy()
             weights[key] = _convert_weight(key, arr)
 
-        # Extract config
-        config = _parse_config(ckpt)
+        # Extract config (pass weights for v1/v2 detection)
+        config = _parse_config(ckpt, weights)
 
         # Validate configuration
         validate_config(config)
@@ -143,7 +143,42 @@ def _convert_weight(key: str, arr: np.ndarray) -> np.ndarray:
     return arr
 
 
-def _parse_config(ckpt: dict) -> dict[str, Any]:
+def _parse_sample_rate(sr_value) -> int:
+    """Parse sample rate from various formats (int, string like '40k')."""
+    if isinstance(sr_value, int):
+        return sr_value
+    if isinstance(sr_value, str):
+        sr_value = sr_value.lower().strip()
+        if sr_value.endswith("k"):
+            return int(sr_value[:-1]) * 1000
+        return int(sr_value)
+    return int(sr_value)
+
+
+def _detect_model_version(weights: dict) -> tuple[str, int]:
+    """
+    Detect model version (v1 or v2) from weights.
+
+    Returns:
+        Tuple of (version, in_channels):
+        - v1: ("v1", 256)
+        - v2: ("v2", 768)
+    """
+    # Check emb_phone weight shape to determine input dimension
+    emb_phone_key = "enc_p.emb_phone.weight"
+    if emb_phone_key in weights:
+        shape = weights[emb_phone_key].shape
+        # Shape is (hidden_channels, in_channels) = (192, 256 or 768)
+        in_channels = shape[1] if len(shape) == 2 else shape[0]
+        if in_channels == 256:
+            return "v1", 256
+        elif in_channels == 768:
+            return "v2", 768
+    # Default to v2
+    return "v2", 768
+
+
+def _parse_config(ckpt: dict, weights: dict = None) -> dict[str, Any]:
     """Parse config from RVC checkpoint."""
     config = {}
 
@@ -153,7 +188,7 @@ def _parse_config(ckpt: dict) -> dict[str, Any]:
     if "version" in ckpt:
         config["version"] = ckpt["version"]
     if "sr" in ckpt:
-        config["sr"] = ckpt["sr"]
+        config["sr"] = _parse_sample_rate(ckpt["sr"])
 
     # Parse config list
     if "config" in ckpt:
@@ -177,7 +212,15 @@ def _parse_config(ckpt: dict) -> dict[str, Any]:
             config["spk_embed_dim"] = cfg[15]
             config["gin_channels"] = cfg[16]
             if len(cfg) > 17:
-                config["sr"] = cfg[17]
+                config["sr"] = _parse_sample_rate(cfg[17])
+
+    # Detect model version from weights if available
+    if weights is not None:
+        detected_version, in_channels = _detect_model_version(weights)
+        config["in_channels"] = in_channels
+        # Only set version if not already present
+        if "version" not in config:
+            config["version"] = detected_version
 
     return config
 

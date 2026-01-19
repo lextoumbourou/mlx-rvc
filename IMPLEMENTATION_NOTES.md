@@ -31,10 +31,12 @@ This document outlines the plan for building an MLX-native implementation of RVC
 | CLI Interface | `mlx_rvc/cli.py` | ✅ | `mlx-rvc convert` and `mlx-rvc info` commands |
 | RMVPE F0 Extraction | `mlx-rmvpe` (PyPI) | ✅ | Separate package, auto-downloads from HuggingFace |
 | FAISS Index Blending | `mlx_rvc/index/faiss_index.py` | ✅ | Optional dependency, improves voice similarity |
+| V1 Model Support | `mlx_rvc/weights/loader.py` | ✅ | Auto-detects v1 (256-dim) vs v2 (768-dim) |
+| Multi-Sample-Rate | `mlx_rvc/weights/loader.py` | 19 tests | 32kHz, 40kHz, 48kHz validated |
 
-**Total: 59 tests passing**
+**Total: 78 tests passing**
 
-**🎉 Voice conversion is working!** Successfully tested with real RVC model.
+**🎉 Voice conversion is working!** Successfully tested with V1 and V2 RVC models.
 
 ### In Progress 🔄
 
@@ -42,7 +44,7 @@ This document outlines the plan for building an MLX-native implementation of RVC
 
 ### Not Started 📋
 
-- V1 Model Support (256-dim variant)
+- No-F0 Model Support (models without pitch conditioning)
 
 ---
 
@@ -500,8 +502,8 @@ vendor/
 ### Phase 2: Quality & Features
 10. ✅ **FAISS Index Blending** - Improves conversion quality via feature retrieval
 11. ✅ **RMVPE F0 Extraction** - Better pitch detection (now in `mlx-rmvpe` PyPI package)
-12. **Multiple Sample Rates** - Support 32k/40k/48k models
-13. **V1 Model Support** - Add 256-dim variant
+12. ✅ **Multiple Sample Rates** - Support 32k/40k/48k models with validation
+13. ✅ **V1 Model Support** - Auto-detect and support 256-dim HuBERT models
 
 ### Phase 3: Optimization
 14. **Streaming/Chunked Processing** - For long audio

@@ -8,7 +8,8 @@ An MLX port of [Retrieval-based-Voice-Conversion-WebUI (RVC)](https://github.com
 
 - Native Apple Silicon acceleration via MLX
 - Full SynthesizerTrnMs768NSFsid implementation
-- Support for 32kHz, 40kHz, and 48kHz models
+- Support for both V1 (256-dim) and V2 (768-dim) models
+- Support for 32kHz, 40kHz, and 48kHz sample rates
 - F0 (pitch) extraction via Harvest or RMVPE
 - RMVPE support for better singing voice pitch detection
 - FAISS index blending for improved voice similarity (optional)
@@ -126,16 +127,27 @@ convert_voice(
 )
 ```
 
+## Model Compatibility
+
+| Model Type | Feature Dim | Status |
+|------------|-------------|--------|
+| V2 + F0 (768-dim) | ContentVec | Fully supported |
+| V1 + F0 (256-dim) | HuBERT | Fully supported |
+| V2 no-F0 | ContentVec | Not yet supported |
+| V1 no-F0 | HuBERT | Not yet supported |
+
+V1 and V2 models are automatically detected from the weights.
+
 ## Architecture
 
-MLX-RVC implements the full RVC v2 inference pipeline:
+MLX-RVC implements the full RVC inference pipeline:
 
 ```
 Audio Input
     ↓
-ContentVec (feature extraction) ──→ Phone features (768-dim)
+ContentVec (feature extraction) ──→ Phone features (768-dim, or 256-dim for V1)
     ↓
-F0 Extraction (Harvest) ──→ Pitch features
+F0 Extraction (Harvest/RMVPE) ──→ Pitch features
     ↓
 ┌─────────────────────────────────┐
 │   SynthesizerTrnMs768NSFsid     │

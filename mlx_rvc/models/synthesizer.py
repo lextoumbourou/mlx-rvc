@@ -41,6 +41,7 @@ class SynthesizerTrnMs768NSFsid(nn.Module):
         spk_embed_dim: Number of speaker embeddings (109)
         gin_channels: Speaker conditioning channels (256)
         sr: Sample rate in Hz (48000)
+        in_channels: Input feature dimension (768 for v2/ContentVec, 256 for v1/HuBERT)
     """
 
     def __init__(
@@ -63,6 +64,7 @@ class SynthesizerTrnMs768NSFsid(nn.Module):
         spk_embed_dim: int,
         gin_channels: int,
         sr: int,
+        in_channels: int = 768,
         **kwargs,
     ):
         super().__init__()
@@ -84,10 +86,11 @@ class SynthesizerTrnMs768NSFsid(nn.Module):
         self.gin_channels = gin_channels
         self.spk_embed_dim = spk_embed_dim
         self.sr = sr
+        self.in_channels = in_channels
 
-        # Text encoder (768 input channels for ContentVec)
+        # Text encoder (in_channels: 768 for v2/ContentVec, 256 for v1/HuBERT)
         self.enc_p = TextEncoder(
-            768,  # ContentVec feature dimension
+            in_channels,
             inter_channels,
             hidden_channels,
             filter_channels,
