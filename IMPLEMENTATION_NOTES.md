@@ -178,6 +178,50 @@ This is automatically applied when importing `mlx_rvc.index`. The performance im
 
 ---
 
+## V1 Model Support ✅ COMPLETE
+
+**Goal**: Support legacy RVC V1 models that use 256-dim HuBERT features instead of 768-dim ContentVec.
+
+**Status**: Fully implemented with automatic detection.
+
+### How It Works
+
+V1 and V2 models differ only in their input feature dimension:
+- **V2**: 768-dim ContentVec features
+- **V1**: 256-dim HuBERT features
+
+The model version is automatically detected by checking the shape of `enc_p.emb_phone.weight`:
+- Shape `[192, 768]` → V2 model
+- Shape `[192, 256]` → V1 model
+
+For V1 models, we use the first 256 dimensions of ContentVec output, which provides compatible features.
+
+### Usage
+
+No special configuration needed - V1 models are automatically detected:
+
+```bash
+# V1 model (auto-detected)
+mlx-rvc convert input.wav output.wav --model v1_model.pth
+
+# V2 model (auto-detected)
+mlx-rvc convert input.wav output.wav --model v2_model.pth
+```
+
+The CLI will show the detected version:
+```
+Loaded RVC model: v1 @ 40000Hz (in_channels=256)
+```
+
+### Technical Details
+
+Changes made to support V1:
+- `loader.py`: Added `_detect_model_version()` to check weight shapes
+- `synthesizer.py`: Added `in_channels` parameter (default 768)
+- `pipeline.py`: Slices ContentVec features to 256 dims for V1 models
+
+---
+
 ## What We Already Have
 
 ### mlx-contentvec (PyPI Package)
@@ -595,9 +639,9 @@ mlx-rvc info voice.pth
 
 | Model Type | Status | Notes |
 |------------|--------|-------|
-| V2 + F0 (768-dim) | Primary Target | Most common, best quality |
+| V2 + F0 (768-dim) | ✅ Supported | Most common, best quality |
+| V1 + F0 (256-dim) | ✅ Supported | Auto-detected, uses first 256 dims of ContentVec |
 | V2 no-F0 | Future | Simpler, no pitch control |
-| V1 + F0 (256-dim) | Future | Legacy support |
 | V1 no-F0 | Future | Legacy support |
 
 ## Testing Strategy
