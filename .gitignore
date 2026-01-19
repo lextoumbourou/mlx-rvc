@@ -12,3 +12,4 @@ wheels/
 vendor
 
 .DS_Store
+.claude
