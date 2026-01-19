@@ -693,6 +693,22 @@ wheels = [
 ]
 
 [[package]]
+name = "mlx-rmvpe"
+version = "0.1.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "huggingface-hub" },
+    { name = "librosa" },
+    { name = "mlx" },
+    { name = "numpy" },
+    { name = "safetensors" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/d1/af/849eaaeabad94f5a3acbca257b1ab47aa4be0fb106a3e91ae9013ae53a58/mlx_rmvpe-0.1.0.tar.gz", hash = "sha256:5f82e961b5652c3adf3ddc0d6f449101fcdf4f8d8d906da61cfd9c6887228f90", size = 13742 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/fa/ee/c7ab4e6c23525ef47061dd5a6d1686ab2f9693f1a4e1bc81bea35088a4c3/mlx_rmvpe-0.1.0-py3-none-any.whl", hash = "sha256:8816b6e9634b11e1e6252a0b683b9152445072048f4eca6f34808d0cfe2fbc4b", size = 10493 },
+]
+
+[[package]]
 name = "mpmath"
 version = "1.3.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1196,6 +1212,7 @@ dependencies = [
     { name = "huggingface-hub" },
     { name = "mlx" },
     { name = "mlx-contentvec" },
+    { name = "mlx-rmvpe" },
     { name = "numpy" },
     { name = "pyworld" },
     { name = "safetensors" },
@@ -1220,6 +1237,7 @@ requires-dist = [
     { name = "huggingface-hub", specifier = ">=0.20.0" },
     { name = "mlx", specifier = ">=0.20.0" },
     { name = "mlx-contentvec", specifier = ">=0.1.0" },
+    { name = "mlx-rmvpe", specifier = ">=0.1.0" },
     { name = "numpy", specifier = ">=1.24.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=7.0.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=4.0.0" },

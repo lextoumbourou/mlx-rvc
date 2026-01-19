@@ -144,9 +144,9 @@ def create_parser():
     )
     convert_parser.add_argument(
         "--f0-method",
-        choices=["harvest"],
+        choices=["harvest", "rmvpe"],
         default="harvest",
-        help="F0 extraction method (default: harvest)",
+        help="F0 extraction method: harvest (fast) or rmvpe (better for singing, auto-downloads weights)",
     )
     convert_parser.set_defaults(func=cmd_convert)
 

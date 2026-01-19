@@ -9,7 +9,8 @@ An MLX port of [Retrieval-based-Voice-Conversion-WebUI (RVC)](https://github.com
 - Native Apple Silicon acceleration via MLX
 - Full SynthesizerTrnMs768NSFsid implementation
 - Support for 32kHz, 40kHz, and 48kHz models
-- F0 (pitch) extraction via pyworld
+- F0 (pitch) extraction via Harvest or RMVPE
+- RMVPE support for better singing voice pitch detection
 - Simple CLI and Python API
 
 ## Installation
@@ -63,6 +64,9 @@ rvc-mlx convert input.wav output.wav --model voice.pth
 
 # With pitch shift (+5 semitones for higher pitch)
 rvc-mlx convert input.wav output.wav --model voice.pth --pitch 5
+
+# Use RMVPE for better singing voice detection
+rvc-mlx convert input.wav output.wav --model voice.pth --f0-method rmvpe
 
 # Show model information
 rvc-mlx info voice.pth

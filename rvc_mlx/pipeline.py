@@ -41,6 +41,9 @@ class RVCPipeline:
         self.contentvec_sr = 16000
         self.contentvec_hop = 320  # 16000 / 50 = 320 samples per frame
 
+        # RMVPE model (lazy loaded from HuggingFace)
+        self._rmvpe_model = None
+
     @classmethod
     def from_pretrained(
         cls,
@@ -110,7 +113,7 @@ class RVCPipeline:
         phone = self._extract_contentvec(audio_16k)
 
         print(f"Extracting F0 ({f0_method})...")
-        f0, f0_coarse = self._extract_f0(audio_16k, f0_shift)
+        f0, f0_coarse = self._extract_f0(audio_16k, f0_shift, f0_method)
 
         # Align lengths (F0 and phone features must match)
         min_len = min(phone.shape[1], f0.shape[0])
@@ -158,6 +161,7 @@ class RVCPipeline:
         self,
         audio: np.ndarray,
         f0_shift: int = 0,
+        f0_method: Optional[str] = None,
     ) -> tuple[np.ndarray, np.ndarray]:
         """
         Extract F0 and convert to coarse pitch.
@@ -165,18 +169,24 @@ class RVCPipeline:
         Args:
             audio: Audio at 16kHz
             f0_shift: Pitch shift in semitones
+            f0_method: F0 extraction method ("harvest" or "rmvpe")
 
         Returns:
             Tuple of (f0_hz, f0_coarse)
         """
-        # Extract F0 at 16kHz with 10ms frame period (matches ContentVec ~50fps)
-        f0 = extract_f0_harvest(
-            audio,
-            sr=self.contentvec_sr,
-            f0_min=50.0,
-            f0_max=1100.0,
-            frame_period=10.0,  # 10ms = 100fps, but harvest may adjust
-        )
+        f0_method = f0_method or self.f0_method
+
+        if f0_method == "rmvpe":
+            f0 = self._extract_f0_rmvpe(audio)
+        else:
+            # Default: Harvest
+            f0 = extract_f0_harvest(
+                audio,
+                sr=self.contentvec_sr,
+                f0_min=50.0,
+                f0_max=1100.0,
+                frame_period=10.0,  # 10ms = 100fps, but harvest may adjust
+            )
 
         # Apply pitch shift
         if f0_shift != 0:
@@ -186,6 +196,20 @@ class RVCPipeline:
         f0_coarse = f0_to_coarse(f0)
 
         return f0, f0_coarse
+
+    def _extract_f0_rmvpe(self, audio: np.ndarray) -> np.ndarray:
+        """Extract F0 using RMVPE model (auto-downloads from HuggingFace)."""
+        # Lazy load RMVPE model
+        if self._rmvpe_model is None:
+            from mlx_rmvpe import RMVPE
+
+            print("Loading RMVPE model...")
+            self._rmvpe_model = RMVPE.from_pretrained()
+
+        # Run inference
+        f0 = self._rmvpe_model.infer_from_audio(audio, threshold=0.03)
+
+        return f0
 
 
 def convert_voice(

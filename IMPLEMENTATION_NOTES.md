@@ -29,6 +29,7 @@ This document outlines the plan for building an MLX-native implementation of RVC
 | Weight Loading | `rvc_mlx/weights/loader.py` | ✅ | Load weights into MLX models |
 | Inference Pipeline | `rvc_mlx/pipeline.py` | ✅ | End-to-end voice conversion |
 | CLI Interface | `rvc_mlx/cli.py` | ✅ | `rvc-mlx convert` and `rvc-mlx info` commands |
+| RMVPE F0 Extraction | `mlx-rmvpe` (PyPI) | ✅ | Separate package, auto-downloads from HuggingFace |
 
 **Total: 59 tests passing**
 
@@ -41,27 +42,111 @@ This document outlines the plan for building an MLX-native implementation of RVC
 ### Not Started 📋
 
 - FAISS Index Blending (improves quality)
-- RMVPE F0 Extraction (better pitch detection)
 - V1 Model Support (256-dim variant)
+
+---
+
+## RMVPE Implementation ✅ COMPLETE
+
+**Goal**: Port RMVPE (Robust Model for Vocal Pitch Estimation) to MLX for better singing voice F0 extraction.
+
+**Status**: RMVPE has been extracted into a separate PyPI package: **[mlx-rmvpe](https://pypi.org/project/mlx-rmvpe/)**
+
+### Installation
+
+RMVPE is automatically installed as a dependency of rvc-mlx. Weights are auto-downloaded from HuggingFace on first use.
+
+```bash
+# Already included via rvc-mlx dependencies
+pip install mlx-rmvpe
+```
+
+### Usage
+
+```python
+from mlx_rmvpe import RMVPE
+
+# Auto-downloads weights from HuggingFace
+model = RMVPE.from_pretrained()
+
+# Extract F0 from audio (16kHz)
+f0 = model.infer_from_audio(audio)
+```
+
+Or via CLI:
+
+```bash
+rvc-mlx convert input.wav output.wav --model voice.pth --f0-method rmvpe
+```
+
+### Why RMVPE?
+
+- Current Harvest method works for speech but struggles with singing
+- RMVPE is specifically designed for "Vocal Pitch Estimation in Polyphonic Music"
+- It's the recommended F0 method in RVC (described as "best effect" in the UI)
+- Frame rate (100fps with hop=160) aligns better with ContentVec (~50fps) than Harvest
+
+### Architecture
+
+See [mlx-rmvpe IMPLEMENTATION_NOTES.md](https://github.com/lexandstuff/mlx-rmvpe/blob/main/IMPLEMENTATION_NOTES.md) for full architecture details.
+
+Summary:
+- Deep U-Net encoder/decoder with skip connections
+- BiGRU (implemented as two separate GRUs for MLX)
+- 360 pitch bins decoded to Hz via cents mapping
+- ~15M parameters
+
+### HuggingFace Weights
+
+Weights are hosted at: `lexandstuff/mlx-rmvpe`
+
+```python
+# Automatic download (default)
+model = RMVPE.from_pretrained()
+
+# Custom repo
+model = RMVPE.from_pretrained(repo_id="my-org/my-rmvpe")
+```
+
+---
 
 ## What We Already Have
 
-### mlx-contentvec (Complete)
+### mlx-contentvec (PyPI Package)
 
-Located in `vendor/mlx-contentvec`, this provides the ContentVec/HuBERT feature extractor:
+Available as **[mlx-contentvec](https://pypi.org/project/mlx-contentvec/)** on PyPI. Provides the ContentVec/HuBERT feature extractor:
 
 - **Input**: Raw audio waveform @ 16kHz, shape `(batch, samples)`
 - **Output**: Semantic features @ ~50fps, shape `(batch, frames, 768)`
 - **Purpose**: Extracts speaker-agnostic phonetic content from speech
 - **Status**: Production-ready, numerically validated against PyTorch reference
+- **Weights**: Auto-downloaded from HuggingFace (`lexandstuff/mlx-contentvec`)
 
 ```python
 from mlx_contentvec import ContentvecModel
 
-model = ContentvecModel(encoder_layers_1=0)  # No speaker conditioning
-model.load_weights("contentvec_base.safetensors")
+# Auto-downloads weights from HuggingFace
+model = ContentvecModel.from_pretrained()
 result = model(audio_tensor)
 features = result["x"]  # (batch, frames, 768)
+```
+
+### mlx-rmvpe (PyPI Package)
+
+Available as **[mlx-rmvpe](https://pypi.org/project/mlx-rmvpe/)** on PyPI. Provides RMVPE F0 extraction:
+
+- **Input**: Raw audio waveform @ 16kHz
+- **Output**: F0 contour @ 100fps in Hz
+- **Purpose**: Robust pitch estimation for singing voice
+- **Status**: Production-ready, validated against PyTorch reference (mean diff: 1.29 Hz)
+- **Weights**: Auto-downloaded from HuggingFace (`lexandstuff/mlx-rmvpe`)
+
+```python
+from mlx_rmvpe import RMVPE
+
+# Auto-downloads weights from HuggingFace
+model = RMVPE.from_pretrained()
+f0 = model.infer_from_audio(audio)  # F0 in Hz
 ```
 
 ## RVC Inference Pipeline
@@ -284,7 +369,6 @@ rvc_mlx/
 ├── f0/
 │   ├── __init__.py
 │   ├── harvest.py           # ✅ pyworld wrapper
-│   ├── rmvpe.py             # 📋 TODO: RMVPE model
 │   └── processing.py        # ✅ Pitch shift, mel conversion
 ├── index/
 │   ├── __init__.py
@@ -327,6 +411,8 @@ weights/                     # Converted MLX weights for HuggingFace
     └── f0G48k.safetensors   # V2 48kHz with F0
 
 vendor/
+├── mlx-contentvec/          # Source for mlx-contentvec PyPI package
+├── mlx-rmvpe/               # Source for mlx-rmvpe PyPI package
 ├── weights/
 │   └── f0G48k.pth           # Reference PyTorch weights (72MB)
 └── Retrieval-based-Voice-Conversion-WebUI/  # Reference implementation
@@ -347,7 +433,7 @@ vendor/
 
 ### Phase 2: Quality & Features
 10. **FAISS Index Blending** - Improve conversion quality
-11. **RMVPE F0 Extraction** - Better pitch detection
+11. ✅ **RMVPE F0 Extraction** - Better pitch detection (now in `mlx-rmvpe` PyPI package)
 12. **Multiple Sample Rates** - Support 32k/40k/48k models
 13. **V1 Model Support** - Add 256-dim variant
 
@@ -402,15 +488,17 @@ Several MLX API differences from PyTorch required workarounds:
 
 **Required**:
 - `mlx` - Apple ML framework
-- `mlx-contentvec` - Feature extraction (vendor)
+- `mlx-contentvec` - Feature extraction (PyPI)
+- `mlx-rmvpe` - RMVPE F0 extraction (PyPI)
 - `numpy` - Numerical operations
 - `pyworld` - F0 extraction (Harvest)
 - `safetensors` - Weight storage
+- `huggingface-hub` - Model weight downloads
 - `ffmpeg` - Audio codec (external)
 
 **Optional**:
 - `faiss-cpu` - Index blending
-- `librosa` - Additional audio utilities
+- `librosa` - Additional audio utilities (used by mlx-rmvpe)
 - `soundfile` - Audio I/O alternative
 
 ## CLI Interface Design
@@ -419,21 +507,14 @@ Several MLX API differences from PyTorch required workarounds:
 # Basic usage
 rvc-mlx convert input.wav output.wav --model voice.pth
 
-# Full options
-rvc-mlx convert input.wav output.wav \
-    --model voice.pth \
-    --index voice.index \
-    --f0-method harvest \
-    --transpose 0 \
-    --index-rate 0.66 \
-    --protect 0.33 \
-    --rms-mix 1.0
+# With RMVPE for singing (auto-downloads weights)
+rvc-mlx convert input.wav output.wav --model voice.pth --f0-method rmvpe
 
-# List available models
-rvc-mlx list-models
+# With pitch shift
+rvc-mlx convert input.wav output.wav --model voice.pth --pitch 5
 
-# Download pre-trained models
-rvc-mlx download rmvpe
+# Show model info
+rvc-mlx info voice.pth
 ```
 
 ## Model Compatibility
