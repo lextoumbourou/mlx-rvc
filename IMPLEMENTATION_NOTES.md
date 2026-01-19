@@ -376,6 +376,71 @@ rvc-mlx download rmvpe
 3. **Numerical Validation**: Compare outputs to original RVC
 4. **Audio Quality**: Subjective listening tests
 
+## Reference Weights
+
+Reference PyTorch weights for development and testing are stored in `vendor/weights/`.
+
+### Downloading Weights
+
+From HuggingFace: https://huggingface.co/lj1995/VoiceConversionWebUI/tree/main/
+
+```bash
+# V2 Generator with F0 (48kHz) - primary development target
+curl -L "https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main/pretrained_v2/f0G48k.pth" \
+     -o vendor/weights/f0G48k.pth
+```
+
+### Available Models
+
+| File | Model | Description |
+|------|-------|-------------|
+| `f0G48k.pth` | SynthesizerTrnMs768NSFsid | V2 generator with F0, 48kHz (~72MB) |
+| `f0G40k.pth` | SynthesizerTrnMs768NSFsid | V2 generator with F0, 40kHz |
+| `f0G32k.pth` | SynthesizerTrnMs768NSFsid | V2 generator with F0, 32kHz |
+
+**Naming convention:**
+- `f0G` = Generator with F0 (pitch)
+- `G` = Generator without F0
+- `D` = Discriminator (training only)
+- `32k/40k/48k` = sample rate
+
+### Checkpoint Structure
+
+The pretrained checkpoints use training format:
+```python
+{
+    "model": {...},        # state_dict (560 keys for full model)
+    "iteration": 392,      # training iteration
+    "learning_rate": 0.0001
+}
+```
+
+Key weight prefixes:
+- `enc_p.*` - TextEncoder (113 params)
+- `dec.*` - GeneratorNSF (243 params)
+- `enc_q.*` - PosteriorEncoder (103 params, training only)
+- `flow.*` - ResidualCouplingBlock (100 params)
+- `emb_g.*` - Speaker embedding (1 param)
+
+### GeneratorNSF Weight Structure (48kHz)
+
+```
+dec.m_source.l_linear     - Linear(1→1) harmonic combiner
+dec.noise_convs.[0-3]     - F0 source injection convs
+dec.conv_pre              - Conv1d(192→512, k=7)
+dec.ups.[0-3]             - ConvTranspose1d with weight norm
+dec.resblocks.[0-11]      - ResBlock1 with weight norm
+dec.conv_post             - Conv1d(32→1, k=7)
+dec.cond                  - Conv1d(256→512, k=1) speaker conditioning
+```
+
+Weight normalization uses `weight_g` and `weight_v` decomposition:
+```python
+# Effective weight: w = g * (v / ||v||)
+weight_g: torch.Size([out_ch, 1, 1])  # magnitude
+weight_v: torch.Size([out_ch, in_ch, kernel])  # direction
+```
+
 ## References
 
 - [RVC WebUI Repository](https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI)
